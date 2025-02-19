@@ -1,0 +1,2 @@
+check if triggers say if they are from n-back or arithmetic.
+write code to get data from triggers.

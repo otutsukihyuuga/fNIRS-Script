@@ -4,6 +4,7 @@ import sys
 import pandas as pd
 import os
 import uuid
+from pylsl import StreamInfo, StreamOutlet
 
 # Initialize Pygame
 pygame.init()
@@ -13,6 +14,19 @@ screen_info = pygame.display.Info()
 screen_width, screen_height = screen_info.current_w, screen_info.current_h
 screen = pygame.display.set_mode((screen_width, screen_height-50))
 pygame.display.set_caption("N-back Test")
+
+# Create LSL StreamInfo and StreamOutlet
+channels=1
+name = 'Trigger'
+type = 'n-back'
+# sampling_rate=10.2
+datatype='string'
+source_id='fNIRS'
+info = StreamInfo(name = name,type= type, channel_count=channels, channel_format=datatype, source_id=source_id)
+#here types of markers would be break, instruction, stimulus, pause, response
+# break: break time; instruction: N, stimulus: stimulus; pause; response: response
+
+outlet = StreamOutlet(info)
 
 # Colors
 white = (255, 255, 255)
@@ -66,7 +80,7 @@ def save_df(df):
     # Create the directory if it doesn't exist
     if not os.path.exists(directory):
         os.makedirs(directory)
-    file_name = uid.generate_short_uid() +'_Nback_data.xlsx'
+    file_name = uuid.generate_short_uid() +'_Nback_data.xlsx'
     file_path = os.path.join(directory, file_name)
 
     # Save the DataFrame to an Excel file
@@ -95,6 +109,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
         'passes':[],
         'stimuli':[]
     })
+    outletDataSent = -1 #0 for break, 1 for instruction, 2 for stimulus, 3 for pause
     stimuli, passes = generate_stimuli(N[0], stimuliRange, minHits, maxHits)
     
     N_index = 0
@@ -116,6 +131,9 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
     while running:
         screen.fill(white)
         if break_duration>0:
+            if outletDataSent != 0:
+                outlet.push_sample(x=['Break: '+str(break_duration/1000)])
+                outletDataSent = 0
             timer,break_duration = displayBreak(timer,break_duration,clock)
             if break_duration == 0:
                 show_break = True
@@ -130,7 +148,8 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                             score += 1
                         else:
                             score -= 1
-                        inputs.append('m')
+                        # inputs.append('m')
+                        outlet.push_sample(['Pressed: m'])
                         pressed = True
                         timer=0
                     elif event.key == pygame.K_x and show_stimulus:  #press when stimulus dont match
@@ -138,7 +157,8 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                             score -= 1
                         else:
                             score +=1
-                        inputs.append('x')
+                        # inputs.append('x')
+                        outlet.push_sample(['Pressed: x'])
                         pressed = True
                         timer=0
                 if event.key == pygame.K_RETURN and show_break:
@@ -148,6 +168,9 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
                                     screen_height // 2 - stimulus_text.get_height() // 2))
         elif show_instruction:
+            if outletDataSent != 1:
+                outlet.push_sample(['Instruction: '+str(N[N_index])])
+                outletDataSent = 1
             stimulus_text = font.render("{}-back Start".format(N[N_index]), True, black)
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
                                     screen_height // 2 - stimulus_text.get_height() // 2))
@@ -181,6 +204,9 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                 stimuli, passes = generate_stimuli(N[N_index], stimuliRange, minHits, maxHits)
                 show_instruction = True
                 
+            if outletDataSent != 2:
+                outlet.push_sample(['Stimulus: '+str(stimuli[index])])
+                outletDataSent = 2
             stimulus_text = font.render(str(stimuli[index]), True, black)
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
                                         screen_height // 2 - stimulus_text.get_height() // 2))
@@ -208,9 +234,13 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                 next_stimulus = True
                 index += 1
                 if not pressed:
-                    inputs.append('NA')
+                    # inputs.append('NA')
+                    outlet.push_sample(['Pressed: NA'])
         
         elif next_stimulus:
+            if outletDataSent != 3:
+                outlet.push_sample(['Pause'])
+                outletDataSent = 3
             info_text = font.render("+", True, black)
             screen.blit(info_text, (screen_width//2 - info_text.get_width()//2, screen_height // 2 - info_text.get_height() // 2))
             timer += clock.get_time()
