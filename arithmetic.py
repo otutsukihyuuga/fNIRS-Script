@@ -71,73 +71,72 @@ def getAdd(carry,fdigits,ldigits):
         return getAdd(carry,ldigits,ldigits)
     return addund,addend
 
+def newGetAdd(digits):#dont't care if carry is present or not
+    addends=[]
+    for digit in digits:
+        addund=0
+        while digit>0:
+            addund*=10
+            addund += random.randint(1,9)
+            digit-=1
+        addends.append(addund)
+    return addends
 
 def getQuestionAnswerList(difficulty,q=[],a=[],quant=2,fprob=0.5):
     events=[True,False]
     prob=[1-fprob,fprob]
     while quant>0:
         quant-=1
+        error=0
         if difficulty == 1:
-            x,y = getAdd(carry=[0], fdigits=2,ldigits=1)
+            # x,y = getAdd(carry=[0], fdigits=2,ldigits=1)
+            addends = newGetAdd([2,1])
             answer = random.choices(events,prob)[0]
-            if answer:
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y))
-            else:
+            if not answer:
                 error = random.choices([1,-1],[0.5,0.5])[0]
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y-error))
-            a.append(answer)
 
         elif difficulty == 2:
-            x,y = getAdd(carry=[],fdigits=2,ldigits=2)
+            # x,y = getAdd(carry=[],fdigits=2,ldigits=2)
+            addends = newGetAdd([2,1,1])
             answer = random.choices(events,prob)[0]
-            if answer:
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y))
-            else:
+            if not answer:
                 error = random.choices([10,-10,1,-1],[0.25,0.25,0.25,0.25])[0]
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y-error))
-            a.append(answer)
 
         elif difficulty == 3:
-            x,y = getAdd(carry=[1],fdigits=2,ldigits=2)
+            # x,y = getAdd(carry=[1],fdigits=2,ldigits=2)
+            addends = newGetAdd([2,1,1,1])
             answer = random.choices(events,prob)[0]
-            if answer:
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y))
-            else:
-                error = random.choices([10,-10],[0.5,0.5])[0]
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y-error))
-            a.append(answer)
+            if not answer:
+                error = random.choices([10,-10,1,-1],[0.25,0.25,0.25,0.25])[0]
             
         elif difficulty ==4:
-            x,y = getAdd(carry=[1],fdigits=3,ldigits=2)
+            # x,y = getAdd(carry=[1],fdigits=3,ldigits=2)
+            addends = newGetAdd([2,2])
             answer = random.choices(events,prob)[0]
-            if answer:
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y))
-            else:
-                error = random.choices([10,-10],[0.5,0.5])[0]
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y-error))
-            a.append(answer)
+            if not answer:
+                error = random.choices([10,-10,1,-1],[0.25,0.25,0.25,0.25])[0]
 
         elif difficulty == 5:
-            x,y = getAdd(carry=[0,1],fdigits=3,ldigits=2)
+            # x,y = getAdd(carry=[0,1],fdigits=3,ldigits=2)
+            addends = newGetAdd([2,2,1])
             answer = random.choices(events,prob)[0]
-            if answer:
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y))
-            else:
-                error = random.choices([1,-1],[0.5,0.5])[0]
-                error+= random.choices([0,10],[0.5,0.5])[0]
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y-error))
-            a.append(answer)
+            if not answer:
+                error = random.choices([10,-10,1,-1],[0.25,0.25,0.25,0.25])[0]
 
         elif difficulty == 6:
-            x,y = getAdd(carry=[0,1],fdigits=3,ldigits=3)
+            # x,y = getAdd(carry=[0,1],fdigits=3,ldigits=3)
+            addends = newGetAdd([2,2,1,1])
             answer = random.choices(events,prob)[0]
-            if answer:
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y))
-            else:
-                error = random.choices([100,-100],[0.5,0.5])[0]
-                error+= random.choices([0,-10],[0.5,0.5])[0]
-                q.append(str(x)+' + '+str(y)+' = '+str(x+y-error))
-            a.append(answer)
+            if not answer:
+                error = random.choices([10,-10,1,-1],[0.25,0.25,0.25,0.25])[0]
+        sum=0
+        qString = ''
+        for addend in addends:
+            sum+=addend
+            qString+=str(addend)+' + '
+        qString = qString[:-2]
+        q.append(qString+' = '+str(sum-error))
+        a.append(answer)
     return q,a
 
 def displayBreak(timer,break_duration,clock):
@@ -154,12 +153,12 @@ def displayBreak(timer,break_duration,clock):
                                 screen_height // 2 - text_surface.get_height() // 2))
     return timer,break_duration
 
-def saveData(question,answer,response):
+def saveData(question,answer,response, participant_id):
     directory = 'data'
 
     if not os.path.exists(directory):
         os.makedirs(directory)
-    file_name = uuid.generate_short_uid() +'_Arithmetic_data.xlsx'
+    file_name = str(participant_id) +'_Arithmetic_data.xlsx'
     file_path = os.path.join(directory, file_name)
     pd.DataFrame({
         'Questions':question,
@@ -172,11 +171,13 @@ def main():
     running = True
 
     difficulty = [1,2,3,4,5,6]
+    # difficulty = [5,6]
     session = 2
-    n=5
+    n=2
     sessionBreak = 10000
     levelBreak = 5000
-    trialLengthList = [5000,7000,8000,9000,10000,10000] #change by trial and error for participants
+    trialLengthList = [5000,6000,7000,6000,7000,8000] #change by trial and error for participants
+    # trialLengthList = [7000,8000]
     bufferTime = 500
     trialLength = trialLengthList[0]
     
@@ -190,9 +191,9 @@ def main():
     show_question = True
     fprob = 0.5
     question, answer = getQuestionAnswerList(difficulty[difficultyIndex],quant=n,fprob=fprob)
-    # response=[]
+    response=[]
     outletDataSent = -1 #0 for break, 1 for question, 2 for pause
-
+    participant_id = input("Enter participant ID: ")
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -202,11 +203,11 @@ def main():
                 if not pressed:
                     if event.key == pygame.K_m and show_question:
                         pressed = True
-                        # response.append(True)
+                        response.append(True)
                         outlet.push_sample(x=['Pressed: Yes'])
                     elif event.key == pygame.K_x and show_question:
                         pressed = True
-                        # response.append(False)
+                        response.append(False)
                         outlet.push_sample(x=['Pressed: No'])
                 if event.key == pygame.K_RETURN and show_break:
                     show_break = False
@@ -244,7 +245,7 @@ def main():
                         session-=1
                         if session == 0:
                             #todo record data along with time
-                            # saveData(question,answer,response)
+                            saveData(question,answer,response,participant_id)
                             running = False
                             continue
                         break_duration = sessionBreak
@@ -276,8 +277,9 @@ def main():
 
             timer+=clock.get_time()
             if timer>trialLength:
+                print(question[index])
                 if not pressed:
-                    # response.append('NA')
+                    response.append('NA')
                     outlet.push_sample(x=['Pressed: NA'])
                 timer = 0
                 nextQuestion=True

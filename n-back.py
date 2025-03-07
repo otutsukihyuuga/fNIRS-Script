@@ -73,14 +73,14 @@ def update_df(N_back,inputs,passes, stimuli, df):
     df = pd.concat([df,new_df],ignore_index=True)
     return df
 
-def save_df(df):
+def save_df(df, participant_id):
     # Directory where you want to save the file
     directory = 'data'
 
     # Create the directory if it doesn't exist
     if not os.path.exists(directory):
         os.makedirs(directory)
-    file_name = uuid.generate_short_uid() +'_Nback_data.xlsx'
+    file_name = str(participant_id) +'_Nback_data.xlsx'
     file_path = os.path.join(directory, file_name)
 
     # Save the DataFrame to an Excel file
@@ -127,7 +127,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
     clock = pygame.time.Clock()
     timer = 0
     break_duration = 0
-
+    participant_id = input('Enter participant ID: ')
     while running:
         screen.fill(white)
         if break_duration>0:
@@ -148,7 +148,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                             score += 1
                         else:
                             score -= 1
-                        # inputs.append('m')
+                        inputs.append('m')
                         outlet.push_sample(['Pressed: m'])
                         pressed = True
                         timer=0
@@ -157,7 +157,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                             score -= 1
                         else:
                             score +=1
-                        # inputs.append('x')
+                        inputs.append('x')
                         outlet.push_sample(['Pressed: x'])
                         pressed = True
                         timer=0
@@ -197,7 +197,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                     break_duration = sessionBreak
                 elif N_index == len(N) and sessions==0: #game is over
                     running = False
-                    save_df(df)
+                    save_df(df,participant_id)
                     continue
                 else:
                     break_duration = blockBreak
@@ -234,7 +234,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                 next_stimulus = True
                 index += 1
                 if not pressed:
-                    # inputs.append('NA')
+                    inputs.append('NA')
                     outlet.push_sample(['Pressed: NA'])
         
         elif next_stimulus:
@@ -274,9 +274,9 @@ if __name__ == "__main__":
     N = [1,2,3]
     sessions = 2
     stimuliRange = (1,9)
-    sequence_length = 10
-    minHits = 3
-    maxHits = 6
+    sequence_length = 4
+    minHits = 1
+    maxHits = 1
     stimulus_duration = 4500  # milliseconds
     next_stimulus = 500
     instruction_duration = 3000
