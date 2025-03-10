@@ -173,7 +173,7 @@ def main():
     difficulty = [1,2,3,4,5,6]
     # difficulty = [5,6]
     session = 2
-    n=2
+    n=5
     sessionBreak = 10000
     levelBreak = 5000
     trialLengthList = [5000,6000,7000,6000,7000,8000] #change by trial and error for participants
