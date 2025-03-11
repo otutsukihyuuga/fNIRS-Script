@@ -1,2 +1,9 @@
 check if triggers say if they are from n-back or arithmetic.
 write code to get data from triggers.
+pilot study and see if markers are correctly placed.
+while pilotting set up on press markers in case participant knowingly pressed wrong button or did a movement.
+
+for resilience
+add arousal rating
+removing duplicates //database problem
+make full screen
