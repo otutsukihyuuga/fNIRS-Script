@@ -101,7 +101,7 @@ def displayBreak(timer,break_duration,clock):
     clock.tick(60)
     return timer,break_duration
 # Main game loop
-def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, instruction_duration, sessionBreak, blockBreak):
+def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, sessionBreak, blockBreak):
     inputs=[]
     df = pd.DataFrame({
         'N_back':[],
@@ -163,6 +163,9 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                         timer=0
                 if event.key == pygame.K_RETURN and show_break:
                     show_break = False
+                elif event.key == pygame.K_RETURN and show_instruction:
+                    show_instruction = False
+                    pressed = False
         if show_break:
             stimulus_text = font.render("Break is over press enter when you are ready.", True, black)
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
@@ -174,12 +177,19 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
             stimulus_text = font.render("{}-back Start".format(N[N_index]), True, black)
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
                                     screen_height // 2 - stimulus_text.get_height() // 2))
+            
+            instructionDescriptionList = ["In this task, you will be shown a sequence of numbers.","If the current number matches the number that was shown N numbers ago, press 'm'.","If the current number does not match the number that was shown N numbers ago, press 'x'."]
+            for i,instructionDescription in enumerate(instructionDescriptionList):
+                instruction_text = small_font.render(instructionDescription, True, black)
+                screen.blit(instruction_text, (screen_width // 2 - instruction_text.get_width() // 2,
+                                        3*screen_height//10 - instruction_text.get_height() // 2 + i*instruction_text.get_height()))
+            
+            pressEnter = "Press Enter to start the task"
+            instruction_text = small_font.render(pressEnter, True, black)
+            screen.blit(instruction_text, (screen_width // 2 - instruction_text.get_width() // 2,
+                                    7*screen_height//10 - instruction_text.get_height() // 2))
+            
             pygame.display.flip()
-            timer += clock.get_time()
-            if timer>=instruction_duration:
-                show_instruction = False
-                timer = 0
-                pressed = False
 
         elif show_stimulus:
             if index >= sequence_length: #current n-back is over
@@ -274,13 +284,12 @@ if __name__ == "__main__":
     N = [1,2,3]
     sessions = 2
     stimuliRange = (1,9)
-    sequence_length = 4
-    minHits = 1
-    maxHits = 1
+    sequence_length = 10
+    minHits = 3
+    maxHits = 4
     stimulus_duration = 4500  # milliseconds
     next_stimulus = 500
-    instruction_duration = 3000
     sessionBreak = 10000
     blockBreak = 5000
 
-    main(N,sessions-1,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, instruction_duration, sessionBreak, blockBreak)
+    main(N,sessions-1,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, sessionBreak, blockBreak)

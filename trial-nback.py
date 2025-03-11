@@ -101,7 +101,7 @@ def displayBreak(timer,break_duration,clock):
     clock.tick(60)
     return timer,break_duration
 # Main game loop
-def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, instruction_duration, sessionBreak, blockBreak):
+def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, sessionBreak, blockBreak):
     inputs=[]
     df = pd.DataFrame({
         'N_back':[],
@@ -163,6 +163,9 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                         timer=0
                 if event.key == pygame.K_RETURN and show_break:
                     show_break = False
+                elif event.key == pygame.K_RETURN and show_instruction:
+                    show_instruction = False
+                    pressed = False
         if show_break:
             stimulus_text = font.render("Break is over press enter when you are ready.", True, black)
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
@@ -174,12 +177,18 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
             stimulus_text = font.render("{}-back Start".format(N[N_index]), True, black)
             screen.blit(stimulus_text, (screen_width // 2 - stimulus_text.get_width() // 2,
                                     screen_height // 2 - stimulus_text.get_height() // 2))
+            
+            instructionDescriptionList = ["In this task, you will be shown a sequence of numbers.","If the current number matches the number that was shown N numbers ago, press 'm'.","If the current number does not match the number that was shown N numbers ago, press 'x'."]
+            for i,instructionDescription in enumerate(instructionDescriptionList):
+                instruction_text = small_font.render(instructionDescription, True, black)
+                screen.blit(instruction_text, (screen_width // 2 - instruction_text.get_width() // 2,
+                                        3*screen_height//10 - instruction_text.get_height() // 2 + i*instruction_text.get_height()))
+            
+            pressEnter = "Press Enter to start the task"
+            instruction_text = small_font.render(pressEnter, True, black)
+            screen.blit(instruction_text, (screen_width // 2 - instruction_text.get_width() // 2,
+                                    7*screen_height//10 - instruction_text.get_height() // 2))
             pygame.display.flip()
-            timer += clock.get_time()
-            if timer>=instruction_duration:
-                show_instruction = False
-                timer = 0
-                pressed = False
 
         elif show_stimulus:
             if index >= sequence_length: #current n-back is over
@@ -219,15 +228,57 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
             #N[n_index] is the current n
             #stimuli[index] is the current stimulus index being index 
             instruction_string = ""
+            color = red
             if index<N[N_index]:
                 instruction_string = "Since this is the first "+str(N[N_index])+" stimuli, press 'x' as the stimuli do not match"
             elif stimuli[index] == stimuli[index-N[N_index]]:
                 instruction_string = "Press 'm' as the stimuli match"
+                color = green
             else:
                 instruction_string = "Press 'x' as the stimuli do not match"
-            instruction_text = small_font.render(instruction_string, True, red)
+            instruction_text = small_font.render(instruction_string, True, color)
             screen.blit(instruction_text, (screen_width // 2 - instruction_text.get_width() // 2,
                                     3*screen_height//10 - instruction_text.get_height() // 2))
+            previous_stimulus_text = "Previous Stimulus: "
+            stimulus_list = []  # List to store rendered text segments
+            first = True  # Flag to check if it's the first stimulus
+
+            for i in range(N[N_index]):
+                if index - N[N_index] + i >= 0:
+                    stimulus_str = str(stimuli[index - N[N_index] + i])
+                else:
+                    stimulus_str = "X"
+
+                stimulus_str += " "  # Add space for proper formatting
+
+                # Render first stimulus in red, others in black
+                if first:
+                    if index in passes:
+                        color = green
+                    else:
+                        color = red
+                else:
+                    color = black
+                first = False  # Only first stimulus is red
+
+                stimulus_list.append(small_font.render(stimulus_str, True, color))
+
+            # Render the "Previous Stimulus: " part in black
+            label_surface = small_font.render(previous_stimulus_text, True, black)
+
+            # Compute positions
+            x_pos = screen_width // 2 - label_surface.get_width() // 2
+            y_pos = 3 * screen_height // 10 + label_surface.get_height() // 2
+
+            # Blit the label
+            screen.blit(label_surface, (x_pos, y_pos))
+            x_pos += label_surface.get_width()  # Move x forward
+
+            # Blit each stimulus part
+            for stimulus_surface in stimulus_list:
+                screen.blit(stimulus_surface, (x_pos, y_pos))
+                x_pos += stimulus_surface.get_width()  # Move x forward
+
             # if index-N[N_index] < 0:
             #     previous_stimulus = font.render("Previous Stimulus: NA", True, black)
             # else:
@@ -299,8 +350,7 @@ if __name__ == "__main__":
     maxHits = 2
     stimulus_duration = 4500  # milliseconds
     next_stimulus = 500
-    instruction_duration = 3000
     sessionBreak = 10000
     blockBreak = 5000
 
-    main(N,sessions-1,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, instruction_duration, sessionBreak, blockBreak)
+    main(N,sessions-1,stimuliRange,sequence_length, minHits, maxHits, stimulus_duration, next_stimulus, sessionBreak, blockBreak)
