@@ -6,6 +6,7 @@ import pandas as pd
 import os
 import uuid
 from pylsl import StreamInfo, StreamOutlet
+from lsl import LSL
 
 
 # Initialize Pygame
@@ -22,14 +23,14 @@ channels=1
 name = 'Trigger'
 type = 'arithmetic'
 # sampling_rate=10.2
-datatype='string'
+datatype='int16'
 source_id='fNIRS'
 info = StreamInfo(name = name,type= type, channel_count=channels, channel_format=datatype, source_id=source_id)
 #3 channels for response, question presented and mode
 #mode will be of 3 types: break, question, pause
 #this can be done with 1 channel as well. format: break, question: {q}, pause, key: {Yes/No}
 #since there is no entry to other cases i'll have a entry flag which if true will send data to stream. this will have to do for 3 modes only.
-outlet = StreamOutlet(info)
+outlet = LSL(StreamOutlet(info))
 
 # Colors
 white = (255, 255, 255)
@@ -165,6 +166,7 @@ def saveData(question,answer,response, participant_id):
         'Answers':answer,
         'Response':response
     }).to_excel(file_path,index=False)
+    outlet.save(str(participant_id)+'_Arithmetic_mapping.json')
 
 def main():
     clock = pygame.time.Clock()
@@ -204,17 +206,17 @@ def main():
                     if event.key == pygame.K_m and show_question:
                         pressed = True
                         response.append(True)
-                        outlet.push_sample(x=['Pressed: Yes'])
+                        outlet.push_sample('Pressed: Yes')
                     elif event.key == pygame.K_x and show_question:
                         pressed = True
                         response.append(False)
-                        outlet.push_sample(x=['Pressed: No'])
+                        outlet.push_sample('Pressed: No')
                 if event.key == pygame.K_RETURN and show_break:
                     show_break = False
 
         if break_duration>0:
             if outletDataSent!=0:
-                outlet.push_sample(x=['Break: '+str(break_duration//1000)])
+                outlet.push_sample('Break: '+str(break_duration//1000))
                 outletDataSent=0
             timer,break_duration = displayBreak(timer,break_duration,clock)
             if break_duration == 0:
@@ -228,7 +230,7 @@ def main():
         elif nextQuestion:
             screen.fill(white)
             if outletDataSent!=2:
-                outlet.push_sample(x=['Pause'])
+                outlet.push_sample('Pause')
                 outletDataSent=2
             info_text = font.render("+", True, black)
             screen.blit(info_text, (screen_width//2 - info_text.get_width()//2, screen_height // 2 - info_text.get_height() // 2))
@@ -259,7 +261,7 @@ def main():
             # Clear the screen
             screen.fill(white)
             if outletDataSent!=1:
-                outlet.push_sample(x=['Question: '+question[index]])
+                outlet.push_sample('Question: '+question[index])
                 outletDataSent=1
             # Render the input text
             display_text = question[index]
@@ -280,7 +282,7 @@ def main():
                 print(question[index])
                 if not pressed:
                     response.append('NA')
-                    outlet.push_sample(x=['Pressed: NA'])
+                    outlet.push_sample('Pressed: NA')
                 timer = 0
                 nextQuestion=True
                 pressed=True
