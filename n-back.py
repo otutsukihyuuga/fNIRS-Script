@@ -18,7 +18,7 @@ pygame.display.set_caption("N-back Test")
 
 # Create LSL StreamInfo and StreamOutlet
 channels=1
-name = 'Trigger'
+name = 'LsLTriggers'
 type = 'n-back'
 # sampling_rate=10.2
 datatype='int16'
@@ -40,24 +40,22 @@ font = pygame.font.Font(None, 74)
 small_font = pygame.font.Font(None, 36)
 
 # Generate random sequence of stimuli
-def generate_stimuli(N, stimuliRange, minHits, maxHits):
+def generate_stimuli(N, stimuliRange, minHits, maxHits,sequence_length):
     hits = random.randint(minHits,maxHits)
     sequence = [random.randint(stimuliRange[0], stimuliRange[1]) for _ in range(sequence_length)]
-    passes=[]
-    for i in range(N,sequence_length):
-        if sequence[i] == sequence[i-N]:
-            if sequence[i] == stimuliRange[1]:
-                sequence[i] = stimuliRange[0]
+    
+    #get passes
+    passes = sorted(random.sample(range(N, sequence_length), hits))
+
+    for i in range(sequence_length):
+        if i in passes: #if this has to be a hit then make it
+            sequence[i] = sequence[i-N]
+        if i+N < sequence_length and sequence[i] == sequence[i+N]: #make sure this number isn't a hit for next nback
+            if sequence[i+N] == stimuliRange[1]:
+                sequence[i+N] = sequence[i+N]-1
             else:
-                sequence[i] = sequence[i]+1
-    for _ in range(hits):
-        hit_index = random.randint(N, sequence_length-1)
-        while (hit_index in passes):
-            hit_index = random.randint(N, sequence_length-1)
-        passes.append(hit_index)
-    passes.sort()
-    for i in passes:
-        sequence[i] = sequence[i-N]
+                sequence[i+N] = sequence[i+N]+1
+
     return sequence,passes
 
 def update_df(N_back,inputs,passes, stimuli, df):
@@ -86,7 +84,9 @@ def save_df(df, participant_id):
 
     # Save the DataFrame to an Excel file
     df.to_excel(file_path,index=False)
-    outlet.save(str(participant_id) + '_Nback_mapping.json')
+    file_name = str(participant_id) +'_Nback_mapping.json'
+    file_path = os.path.join(directory, file_name)
+    outlet.save(file_path)
 def displayBreak(timer,break_duration,clock):
     timer+=clock.get_time()
     if timer>break_duration:
@@ -112,7 +112,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
         'stimuli':[]
     })
     outletDataSent = -1 #0 for break, 1 for instruction, 2 for stimulus, 3 for pause
-    stimuli, passes = generate_stimuli(N[0], stimuliRange, minHits, maxHits)
+    stimuli, passes = generate_stimuli(N[0], stimuliRange, minHits, maxHits,sequence_length)
     
     N_index = 0
     
@@ -153,7 +153,6 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                         inputs.append('m')
                         outlet.push_sample('Pressed: m')
                         pressed = True
-                        timer=0
                     elif event.key == pygame.K_x and show_stimulus:  #press when stimulus dont match
                         if match:
                             score -= 1
@@ -162,7 +161,6 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                         inputs.append('x')
                         outlet.push_sample('Pressed: x')
                         pressed = True
-                        timer=0
                 if event.key == pygame.K_RETURN and show_break:
                     show_break = False
                 elif event.key == pygame.K_RETURN and show_instruction:
@@ -213,7 +211,7 @@ def main(N,sessions,stimuliRange,sequence_length, minHits, maxHits, stimulus_dur
                     continue
                 else:
                     break_duration = blockBreak
-                stimuli, passes = generate_stimuli(N[N_index], stimuliRange, minHits, maxHits)
+                stimuli, passes = generate_stimuli(N[N_index], stimuliRange, minHits, maxHits,sequence_length)
                 show_instruction = True
                 
             if outletDataSent != 2:

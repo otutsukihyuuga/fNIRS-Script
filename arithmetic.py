@@ -20,7 +20,7 @@ pygame.display.set_caption("Mental Arithmetic Test")
 
 # Create LSL StreamInfo and StreamOutlet
 channels=1
-name = 'Trigger'
+name = 'LsLTriggers'
 type = 'arithmetic'
 # sampling_rate=10.2
 datatype='int16'
@@ -166,7 +166,9 @@ def saveData(question,answer,response, participant_id):
         'Answers':answer,
         'Response':response
     }).to_excel(file_path,index=False)
-    outlet.save(str(participant_id)+'_Arithmetic_mapping.json')
+    file_name = str(participant_id)+'_Arithmetic_mapping.json'
+    file_path = os.path.join(directory, file_name)
+    outlet.save(file_path)
 
 def main():
     clock = pygame.time.Clock()
